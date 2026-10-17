@@ -1,0 +1,15 @@
+{
+  "name": "onluyen-bot-vip",
+  "version": "4.0.0",
+  "description": "Advanced AI Homework Solver with Multi-Gateway & Dashboard",
+  "main": "dist/solver.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "author": "thanhngucomvn999",
+  "license": "MIT"
+}
