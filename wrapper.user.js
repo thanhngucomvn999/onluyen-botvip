@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ONLUYEN Auto Solver VIP (Loader)
 // @namespace    https://github.com/thanhngucomvn999/onluyen-botvip
-// @version      4.1.0
+// @version      4.2.0
 // @description  Loader tải solver VIP từ GitHub qua jsDelivr
 // @author       thanhngucomvn999
 // @match        *://*.onluyen.vn/*

@@ -1,5 +1,3 @@
-import { logger } from './logger.js';
-
 export class Scraper {
     _normalize(s) { return (s || '').replace(/[ \t]+/g, ' ').replace(/[\r\n]+/g, '\n').trim(); }
 

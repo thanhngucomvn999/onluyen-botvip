@@ -1,4 +1,3 @@
-// src/ui-controller.js
 import { CONFIG } from './constants.js';
 import { logger } from './logger.js';
 
@@ -12,7 +11,6 @@ export class UIController {
             el.dispatchEvent(new EventClass(evt, { bubbles: true, cancelable: true, view: window, button: 0, buttons: 1 }));
         });
         try { el.focus?.(); el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
-        logger.debug('Simulated robust click on', el);
     }
 
     async _simulateTyping(element, text) {
@@ -43,7 +41,6 @@ export class UIController {
 
         const opts = Array.from(container.querySelectorAll('.option, .choice, label, [role="radio"], [role="button"], button, div[class*="answer"]'));
         if (opts.length) {
-            // 1. So khớp text đã chuẩn hóa
             for (const el of opts) {
                 const t = el.innerText?.toLowerCase().replace(/\s+/g, '') || '';
                 if (t && (ans.includes(t) || t.includes(ans))) {
@@ -51,18 +48,16 @@ export class UIController {
                     return true;
                 }
             }
-            // 2. Click theo chữ cái đầu
             const first = ans.charAt(0);
-            const map = { 'a': 0, 'b': 1, 'c': 2, 'd': 3 };
+            const map = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'đ': 4 };
             if (map[first] !== undefined && opts[map[first]]) {
                 this._simulateClick(opts[map[first]]);
                 return true;
             }
-            // 3. So khớp MathJax (cho đáp án dạng công thức)
             if (ans.includes('\\frac') || ans.includes('^') || ans.includes('_')) {
                 for (const el of opts) {
                     const mathJax = el.querySelector('mjx-container');
-                    if (mathJax && mathJax.getAttribute('aria-label')?.toLowerCase().includes(ans.substring(0, 10))) {
+                    if (mathJax && mathJax.getAttribute('aria-label')?.toLowerCase().includes(ans.substring(0, 5))) {
                         this._simulateClick(el);
                         return true;
                     }

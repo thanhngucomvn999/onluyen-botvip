@@ -1,4 +1,3 @@
-// src/dashboard.js
 import { CONFIG } from './constants.js';
 
 export class BasicUI {
@@ -45,6 +44,7 @@ export class BasicUI {
         `;
         document.body.appendChild(this.overlay);
         this.statusEl = this.overlay.querySelector('#hw-solver-status');
+        
         this.overlay.querySelector('#hw-solver-close').onclick = () => this.overlay.style.display = 'none';
         this.overlay.querySelector('#hw-btn-start').onclick = () => { this.solver.start(); this.updateStatus('Running', '#27ae60'); };
         this.overlay.querySelector('#hw-btn-stop').onclick = () => { this.solver.stop(); this.updateStatus('Stopped', '#c0392b'); };

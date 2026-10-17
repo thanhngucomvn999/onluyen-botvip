@@ -4,13 +4,17 @@
     GATEWAYS: [
       { name: "KeylessAI", url: "https://keylessai.thryx.workers.dev/v1/chat/completions", model: "gpt-4o" },
       { name: "Pollinations", url: "https://text.pollinations.ai/openai", model: "openai" },
+      { name: "UncloseAI", url: "https://hermes.ai.unturf.com/v1/chat/completions", model: "turboderp/Qwen3.8-27B-exl3" },
       { name: "Kilo Gateway", url: "https://api.kilo.ai/api/gateway/chat/completions", model: "kilo-auto/free" },
       { name: "OVHcloud", url: "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions", model: "Meta-Llama-3_3-70B-Instruct" }
     ],
     PROXY_TIMEOUT_MS: 3e4,
+    RETRIES: 3,
     LOOP_INTERVAL_MS: 4e3,
     HUMAN_DELAY_MIN: 200,
     HUMAN_DELAY_MAX: 800,
+    INSTANT_MODE: false,
+    THINK_BEFORE_ANSWER: true,
     LOG_LEVEL: "INFO"
   };
   const logger = {
@@ -33,6 +37,7 @@
       this._log("ERROR", ...args);
     },
     debug(...args) {
+      if (CONFIG.LOG_LEVEL === "DEBUG") this._log("DEBUG", ...args);
     }
   };
   class APIClient {
@@ -56,7 +61,7 @@
         const payload = {
           model: gw.model,
           messages: [
-            { role: "system", content: "You are a precise assistant. Reply concisely." },
+            { role: "system", content: "You are a precise assistant. Reply concisely with the final answer only." },
             { role: "user", content: userContent }
           ],
           temperature: 0.1,
@@ -146,14 +151,13 @@
         el.dispatchEvent(new Event("change", { bubbles: true }));
       } catch (e) {
       }
-      logger.debug("Simulated robust click on", el);
     }
     async _simulateTyping(element, text) {
       if (!element || !text) return;
       element.focus();
       element.value = "";
-      const minDelay = CONFIG.HUMAN_DELAY_MIN;
-      const maxDelay = CONFIG.HUMAN_DELAY_MAX;
+      const minDelay = CONFIG.INSTANT_MODE ? 0 : CONFIG.HUMAN_DELAY_MIN;
+      const maxDelay = CONFIG.INSTANT_MODE ? 50 : CONFIG.HUMAN_DELAY_MAX;
       for (let i = 0; i < text.length; i++) {
         const char = text[i];
         const code = char.charCodeAt(0);
@@ -183,7 +187,7 @@
           }
         }
         const first = ans.charAt(0);
-        const map = { "a": 0, "b": 1, "c": 2, "d": 3 };
+        const map = { "a": 0, "b": 1, "c": 2, "d": 3, "đ": 4 };
         if (map[first] !== void 0 && opts[map[first]]) {
           this._simulateClick(opts[map[first]]);
           return true;
@@ -191,7 +195,7 @@
         if (ans.includes("\\frac") || ans.includes("^") || ans.includes("_")) {
           for (const el of opts) {
             const mathJax = el.querySelector("mjx-container");
-            if (mathJax && ((_b = mathJax.getAttribute("aria-label")) == null ? void 0 : _b.toLowerCase().includes(ans.substring(0, 10)))) {
+            if (mathJax && ((_b = mathJax.getAttribute("aria-label")) == null ? void 0 : _b.toLowerCase().includes(ans.substring(0, 5)))) {
               this._simulateClick(el);
               return true;
             }
@@ -349,7 +353,7 @@ Log Level: ${CONFIG.LOG_LEVEL}`;
     stop: () => solver.stop(),
     solveOnce: () => solver.solveOnce(),
     clearAll: () => solver.clearAnswers(),
-    config: solver.config,
+    config: CONFIG,
     logger,
     help: () => console.log("Commands: hwSolver.start(), stop(), solveOnce(), clearAll(), help()")
   };

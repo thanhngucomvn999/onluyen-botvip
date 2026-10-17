@@ -24,7 +24,7 @@ export class APIClient {
             const payload = {
                 model: gw.model,
                 messages: [
-                    { role: 'system', content: 'You are a precise assistant. Reply concisely.' },
+                    { role: 'system', content: 'You are a precise assistant. Reply concisely with the final answer only.' },
                     { role: 'user', content: userContent }
                 ],
                 temperature: 0.1,

@@ -12,14 +12,10 @@ export default defineConfig({
         outDir: 'dist',
         minify: false,
         emptyOutDir: true,
-        // Cấu hình quan trọng để tránh tạo ra các file chunk
         rollupOptions: {
             output: {
-                // Gộp tất cả các dynamic import vào một file duy nhất
                 inlineDynamicImports: true,
-                // Đảm bảo tên file đầu ra là solver.js
                 entryFileNames: 'solver.js',
-                // Vô hiệu hóa việc tách nhỏ code
                 manualChunks: undefined
             }
         }
