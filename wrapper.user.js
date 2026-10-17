@@ -7,5 +7,5 @@
 // @match        *://*.onluyen.vn/*
 // @grant        GM_xmlhttpRequest
 // @connect      cdn.jsdelivr.net
-// @require      https://cdn.jsdelivr.net/gh/thanhngucomvn999/onluyen-botvip@v4.0.0/dist/solver.js
+// @require https://cdn.jsdelivr.net/gh/thanhngucomvn999/onluyen-botvip@main/dist/solver.js
 // ==/UserScript==
