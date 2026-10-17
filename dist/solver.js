@@ -10,7 +10,8 @@
     PROXY_TIMEOUT_MS: 3e4,
     LOOP_INTERVAL_MS: 4e3,
     HUMAN_DELAY_MIN: 200,
-    HUMAN_DELAY_MAX: 800
+    HUMAN_DELAY_MAX: 800,
+    LOG_LEVEL: "INFO"
   };
   const logger = {
     history: [],
@@ -131,7 +132,7 @@
       var _a;
       if (!el) return;
       try {
-        el.scrollIntoView({ block: "center", inline: "center" });
+        el.scrollIntoView({ block: "center" });
       } catch (e) {
       }
       ["mouseenter", "mouseover", "mousedown", "pointerdown", "mouseup", "pointerup", "click"].forEach((evt) => {
@@ -149,14 +150,6 @@
     }
     async _simulateTyping(element, text) {
       if (!element || !text) return;
-      const style = window.getComputedStyle(element);
-      const isHidden = style.display === "none" || style.visibility === "hidden" || element.offsetParent === null;
-      if (isHidden) {
-        element.value = text;
-        element.dispatchEvent(new Event("input", { bubbles: true }));
-        element.dispatchEvent(new Event("change", { bubbles: true }));
-        return;
-      }
       element.focus();
       element.value = "";
       const minDelay = CONFIG.HUMAN_DELAY_MIN;
@@ -165,18 +158,16 @@
         const char = text[i];
         const code = char.charCodeAt(0);
         element.dispatchEvent(new KeyboardEvent("keydown", { key: char, keyCode: code, bubbles: true }));
-        element.dispatchEvent(new KeyboardEvent("keypress", { key: char, keyCode: code, bubbles: true }));
         element.value += char;
         element.dispatchEvent(new InputEvent("input", { data: char, inputType: "insertText", bubbles: true }));
         element.dispatchEvent(new KeyboardEvent("keyup", { key: char, keyCode: code, bubbles: true }));
         if (i < text.length - 1) await new Promise((r) => setTimeout(r, minDelay + Math.random() * (maxDelay - minDelay)));
       }
       element.dispatchEvent(new Event("change", { bubbles: true }));
-      element.blur();
     }
     async fillAnswer(container, answer) {
       var _a, _b;
-      const ans = answer.toLowerCase();
+      const ans = answer.toLowerCase().trim();
       const input = container.querySelector('input[type="text"], textarea');
       if (input) {
         await this._simulateTyping(input, answer);
@@ -185,22 +176,22 @@
       const opts = Array.from(container.querySelectorAll('.option, .choice, label, [role="radio"], [role="button"], button, div[class*="answer"]'));
       if (opts.length) {
         for (const el of opts) {
-          const t = ((_a = el.innerText) == null ? void 0 : _a.toLowerCase().trim()) || "";
+          const t = ((_a = el.innerText) == null ? void 0 : _a.toLowerCase().replace(/\s+/g, "")) || "";
           if (t && (ans.includes(t) || t.includes(ans))) {
             this._simulateClick(el);
             return true;
           }
         }
         const first = ans.charAt(0);
-        const map = { "a": 0, "b": 1, "c": 2, "d": 3, "đ": 4 };
+        const map = { "a": 0, "b": 1, "c": 2, "d": 3 };
         if (map[first] !== void 0 && opts[map[first]]) {
           this._simulateClick(opts[map[first]]);
           return true;
         }
-        if (ans.includes("đúng") || ans.includes("sai")) {
-          const target = ans.includes("đúng") ? "đúng" : "sai";
+        if (ans.includes("\\frac") || ans.includes("^") || ans.includes("_")) {
           for (const el of opts) {
-            if ((_b = el.innerText) == null ? void 0 : _b.toLowerCase().includes(target)) {
+            const mathJax = el.querySelector("mjx-container");
+            if (mathJax && ((_b = mathJax.getAttribute("aria-label")) == null ? void 0 : _b.toLowerCase().includes(ans.substring(0, 10)))) {
               this._simulateClick(el);
               return true;
             }
@@ -218,9 +209,6 @@
       document.querySelectorAll('.option, .choice, [role="radio"], div[class*="answer"]').forEach((el) => {
         el.classList.remove("selected", "active", "done");
       });
-      document.querySelectorAll('.question-name, #step, [class*="question"]').forEach((el) => {
-        el.classList.remove("done");
-      });
     }
   }
   class BasicUI {
@@ -236,36 +224,14 @@
       const style = document.createElement("style");
       style.id = "hw-solver-styles";
       style.textContent = `
-            #hw-solver-overlay {
-                position: fixed; bottom: 20px; right: 20px; width: 280px;
-                background: #1e293b; color: #f8fafc; border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 999999;
-                font-family: -apple-system, sans-serif; overflow: hidden;
-                border: 1px solid #334155; transition: all 0.3s;
-            }
-            #hw-solver-header {
-                padding: 12px 16px; background: #0f172a; font-weight: bold;
-                display: flex; justify-content: space-between; align-items: center;
-                border-bottom: 1px solid #334155; cursor: move;
-            }
-            #hw-solver-status {
-                padding: 8px 16px; font-size: 0.85rem; color: #94a3b8;
-                background: #1e293b; border-bottom: 1px solid #334155;
-            }
-            #hw-solver-controls {
-                padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-            }
-            .hw-btn {
-                padding: 8px 12px; border: none; border-radius: 6px;
-                font-weight: 600; cursor: pointer; font-size: 0.85rem;
-                transition: background 0.2s;
-            }
+            #hw-solver-overlay { position: fixed; bottom: 20px; right: 20px; width: 280px; background: #1e293b; color: #f8fafc; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 999999; font-family: -apple-system, sans-serif; overflow: hidden; border: 1px solid #334155; }
+            #hw-solver-header { padding: 12px 16px; background: #0f172a; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+            #hw-solver-status { padding: 8px 16px; font-size: 0.85rem; color: #94a3b8; background: #1e293b; border-bottom: 1px solid #334155; }
+            #hw-solver-controls { padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .hw-btn { padding: 8px 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
             .hw-btn-primary { background: #4F46E5; color: white; }
-            .hw-btn-primary:hover { background: #4338CA; }
             .hw-btn-danger { background: #ef4444; color: white; }
-            .hw-btn-danger:hover { background: #dc2626; }
             .hw-btn-secondary { background: #475569; color: white; }
-            .hw-btn-secondary:hover { background: #334155; }
             .hw-full { grid-column: span 2; }
         `;
       document.head.appendChild(style);
@@ -275,15 +241,13 @@
       this.overlay = document.createElement("div");
       this.overlay.id = "hw-solver-overlay";
       this.overlay.innerHTML = `
-            <div id="hw-solver-header">
-                <span>🚀 AI Solver</span>
-                <span style="cursor:pointer;" id="hw-solver-close">✖</span>
-            </div>
+            <div id="hw-solver-header"><span>🚀 AI Solver</span><span style="cursor:pointer;" id="hw-solver-close">✖</span></div>
             <div id="hw-solver-status">Ready</div>
             <div id="hw-solver-controls">
                 <button class="hw-btn hw-btn-primary hw-full" id="hw-btn-start">▶ Start</button>
                 <button class="hw-btn hw-btn-secondary" id="hw-btn-stop">⏹ Stop</button>
                 <button class="hw-btn hw-btn-secondary" id="hw-btn-solve-once">⚡ Solve Once</button>
+                <button class="hw-btn hw-btn-secondary" id="hw-btn-settings">⚙ Settings</button>
                 <button class="hw-btn hw-btn-danger hw-full" id="hw-btn-clear">🗑 Clear All</button>
             </div>
         `;
@@ -301,6 +265,12 @@
       this.overlay.querySelector("#hw-btn-solve-once").onclick = async () => {
         this.updateStatus("Solving...", "#3498db");
         await this.solver.solveOnce();
+      };
+      this.overlay.querySelector("#hw-btn-settings").onclick = () => {
+        const info = `Gateways: ${CONFIG.GATEWAYS.map((g) => g.name).join(", ")}
+Delay: ${CONFIG.LOOP_INTERVAL_MS}ms
+Log Level: ${CONFIG.LOG_LEVEL}`;
+        alert(info);
       };
       this.overlay.querySelector("#hw-btn-clear").onclick = () => {
         this.solver.clearAnswers();
